@@ -25,7 +25,7 @@ Save that file in the same directory where you cloned the code.
 This file has to be saved inside the gmail-cleaner direcotry.
 
 > !!! IMPORTANT !!!
-You should not share this contents of this credentials.json file with anyone. This will provide the programatic access to your gmail account with the token(from the next step).
+You should not share this contents of the credentials.json file with anyone. This will provide the programatic access to your gmail account with the token(from the next step).
 This file is added in the gitignore of this project. So that you wont accidently share this file.
 Same goes with the token.json file which will be generated when you run the code for the first time.
 
@@ -51,3 +51,8 @@ From the browser you will get a code. Copy and paste that code on the command pr
 This is required for time only. It will cache that token for subsequent runs.
 
 `npm start`
+
+
+## Issues / New features
+
+Feed free to open github issues for issues and for requesting new features
