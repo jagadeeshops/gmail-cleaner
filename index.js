@@ -21,7 +21,7 @@ const {google} = require('googleapis');
 var _ = require('lodash');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.modify'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -123,13 +123,89 @@ function unreadEmailsWithDetails(emails, gmail) {
   groupedMessages = _.groupBy(emails, element => element.from);
   groupedMessagesWithCount = _.map(groupedMessages, (value, key) => ({ from: key, mails: value, count: value.length }))
   messages = _.sortBy(groupedMessagesWithCount, (element) => element.count)
-  for(var i = messages.length - 1; i > 0; i--) {
+  for(var i = messages.length - 1; i >= 0; i--) {
     console.log(messages[i].count + " --- " + messages[i].from ) 
   }
+  console.log("Lets delete the messages one by one"); 
+  // promptForDelete(messages, messages.length - 1, gmail)
+  deleteMessages(messages, messages.length - 1, gmail, deleteMessages)
   debugger
 }
 
+/**
+ * calls the function to which categorized messages according to the senders
+ *
+ * @param messages List of messages grouped by the sender
+ * @param position Position in the array to prompt for deletion
+ * @param gmail gmail client
+ */
+function promptForDelete(messages, position, gmail) {
+  if (position < 0) {
+    console.log("All emails are deleted. Thanks for using cleaner...")
+    return
+  }
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  var sender = messages[position]
+  var questionString = "-----------------------------------------------"
+  questionString = questionString + "\nSender " + sender.from + " has " + sender.count + " mails"
+  questionString = questionString + "\nDo you want to delete all of them"
+  questionString = questionString + "\ntype 'y' to delete, 'n' to move to the next sender\n"
+  rl.question(questionString, (answer) => {
+    rl.close();
+    console.log("you have entered " + answer)
+    if(answer == "y") {
+      deleteMessages(messages, position, gmail)
+    }
+    else if (answer == "n") {
+      console.log("lets move to the next sender")
+      promptForDelete(messages, position - 1, gmail)
+    }
+    else {
+      console.log("please enter 'y' or 'n' only")
+      promptForDelete(messages, position, gmail)
+    }
+    debugger
+  });
+}
+
 // Helper functions
+
+
+/**
+ * calls the function to which categorized messages according to the senders
+ *
+ * @param messages List of messages grouped by the sender
+ */
+function deleteMessages(messages, position, gmail, callback) {
+  if (position < 0) {
+    console.log("All emails are deleted. Thanks for using cleaner...")
+    return
+  }  
+  var sender = messages[position]
+  console.log("Going to delete " + sender.count + " messages from " + sender.from)
+  var mailids = messages[position].mails
+  var ids = []
+  mailids.forEach(element => {
+    ids.push(element.id)
+  });
+  var request = {
+    'userId': 'me',
+    'resource': {
+      "ids" : ids,
+      "removeLabelIds": [ "UNREAD" ]
+    }
+  }
+  debugger
+  gmail.users.messages.batchModify(request, function(err, resp) {
+    if (err) return console.log('The API returned an error: ' + err);
+    debugger
+    callback(messages, position - 1, gmail, callback)
+  })
+}
+
 
 /**
  * Retrieves Messages.
@@ -169,6 +245,7 @@ function getMessages(gmail, emailIds, callback) {
     'userId': 'me',
     'id': emailIds[0].threadId
   };
+  console.log('Getting a email with id ' + emailIds[0].threadId);
   getaMessage(initialRequest, [], 0);
 }
 
